@@ -1,0 +1,128 @@
+- id: 'alarmo_screens_id'
+  alias: Alarm panel UI logic
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - alarm_control_panel.alarmo
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: disarmed
+      sequence:
+      - service: esphome.nspanel_show_disarmed_popup
+        data: {}
+        alias: Show disarmed
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 5
+          milliseconds: 0
+      - service: esphome.nspanel_set_idle
+        data: {}
+        alias: Idle
+    - conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: arming
+      sequence:
+      - service: esphome.nspanel_show_code_screen
+        data:
+          status: Arming alarm
+        alias: Show arming
+    - conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: armed_away
+      sequence:
+      - service: esphome.nspanel_show_armed_popup
+        data: {}
+        alias: Show armed
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 5
+          milliseconds: 0
+      - service: esphome.nspanel_set_idle
+        data: {}
+        alias: Idle
+    - conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: pending
+      sequence:
+      - service: esphome.nspanel_show_code_screen
+        data:
+          status: Enter code
+        alias: Show pending code
+    - conditions:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: triggered
+      sequence:
+      - service: esphome.nspanel_show_triggered
+        data: {}
+        alias: Show triggered
+  mode: single
+- id: 'alarmo_disarm_id'
+  alias: Alarm disarm
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.ok_button
+    to: 'on'
+  condition: []
+  action:
+  - service: alarmo.disarm
+    data:
+      entity_id: alarm_control_panel.alarmo
+      code: '{{ states(''sensor.nspanel_code'') }}'
+  mode: single
+- id: 'alarmo_arm_id'
+  alias: Alarm arm
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - switch.arm_button
+    to: 'on'
+  condition: []
+  action:
+  - service: alarmo.arm
+    data:
+      force: true
+      entity_id: alarm_control_panel.alarmo
+      mode: away
+  mode: single
+- id: 'alarm_show_id'
+  alias: Alarm panel logic on door state
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.door_contact
+    to:
+    - 'on'
+    - 'off'
+  condition:
+  - condition: state
+    entity_id: alarm_control_panel.alarmo
+    state: disarmed
+  action:
+  - if:
+    - condition: state
+      entity_id: binary_sensor.door_contact
+      state: 'on'
+    then:
+    - service: esphome.nspanel_show_arm_screen
+      data: {}
+      alias: Show arm screen
+    else:
+    - service: esphome.nspanel_set_idle
+      data: {}
+      alias: Set idle
+  mode: restart
